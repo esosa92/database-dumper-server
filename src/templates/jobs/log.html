@@ -1,0 +1,38 @@
+{{define "jobs/log.html"}}
+<div id="job"
+    hx-get="/jobs/{{.Job.ID}}/log"
+    hx-trigger="{{if .Job.Finished}}none{{else}}every 1s{{end}}"
+    hx-swap="outerHTML">
+    {{template "job-body" .}}
+</div>
+{{end}}
+
+{{define "job-body"}}
+<article>
+    <p style="margin:0 0 .5rem 0">
+        <strong>Server:</strong> {{.Job.ServerID}}
+        · <strong>Status:</strong> {{template "job-status" .Job.Status}}
+        · <strong>Started:</strong> {{.Job.StartedAt.Format "02/01 15:04:05"}}
+        {{if .Job.Finished}}· <strong>Ended:</strong> {{.Job.EndedAt.Format "02/01 15:04:05"}}{{end}}
+    </p>
+    {{if .Job.Error}}<p style="margin:0; color:var(--pico-color-red-500)">{{.Job.Error}}</p>{{end}}
+    {{if not .Job.Finished}}
+    <button class="outline contrast" hx-post="/jobs/{{.Job.ID}}/stop" hx-target="#job" hx-swap="outerHTML" hx-confirm="Stop this dump?">Stop</button>
+    {{end}}
+</article>
+
+{{if .Files}}
+<article>
+    <h4>Files</h4>
+    <ul>
+        {{range .Files}}
+        <li>{{if .Exists}}<a href="/jobs/{{$.Job.ID}}/files/{{.Index}}">{{.Name}}</a>{{else}}<del>{{.Name}}</del> <small>(no longer on disk)</small>{{end}}</li>
+        {{end}}
+    </ul>
+</article>
+{{end}}
+
+<pre id="job-log" style="max-height:60vh; overflow:auto; white-space:pre-wrap"><code>{{.Job.Log}}</code></pre>
+{{end}}
+
+{{define "job-status"}}{{if eq . "running"}}<mark>running</mark>{{else if eq . "done"}}<ins>done</ins>{{else if eq . "interrupted"}}<small>interrupted</small>{{else}}<del>{{.}}</del>{{end}}{{end}}

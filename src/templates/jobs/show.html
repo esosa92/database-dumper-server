@@ -1,0 +1,38 @@
+{{define "jobs/show.html"}}
+{{template "header" .}}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+    <h2 style="margin:0">Job {{.Job.ID}}</h2>
+    <a href="/jobs">← All jobs</a>
+</div>
+
+<div id="job"
+    hx-get="/jobs/{{.Job.ID}}/log"
+    hx-trigger="{{if .Job.Finished}}none{{else}}every 1s{{end}}"
+    hx-swap="outerHTML">
+    {{template "job-body" .}}
+</div>
+
+<script>
+    let logAtBottom = true;
+    document.addEventListener("scroll", e => {
+        if (e.target.id !== "job-log") return;
+        logAtBottom = e.target.scrollTop + e.target.clientHeight >= e.target.scrollHeight - 4;
+    }, true);
+    document.body.addEventListener("htmx:beforeSwap", e => {
+        const log = document.getElementById("job-log");
+        if (log) e.detail.savedScroll = logAtBottom ? -1 : log.scrollTop;
+    });
+    document.body.addEventListener("htmx:afterSwap", e => {
+        const log = document.getElementById("job-log");
+        if (!log || e.detail.savedScroll === undefined) return;
+        log.scrollTop = e.detail.savedScroll < 0 ? log.scrollHeight : e.detail.savedScroll;
+    });
+    document.addEventListener("DOMContentLoaded", () => {
+        const log = document.getElementById("job-log");
+        if (log) log.scrollTop = log.scrollHeight;
+    });
+</script>
+
+{{template "footer" .}}
+{{end}}

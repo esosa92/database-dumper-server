@@ -1,0 +1,18 @@
+services:
+    go:
+        image: golang:latest
+        container_name: magento_db_dumper_server
+        entrypoint: /entrypoint.sh
+        tty: true
+        environment:
+            - DUMPER_ADMIN_PASSWORD
+        ports:
+            - "8080:8080"
+        volumes:
+            - ./entrypoint.sh:/entrypoint.sh
+            - ./src:/go/src
+            - ./pkg:/go/pkg
+            - ./bin:/go/bin
+            - ./sdk:/sdk
+            - /home/emiliano/.ssh:/host_ssh:ro
+            - /home/emiliano/dumps:/dumps

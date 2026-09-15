@@ -1,0 +1,67 @@
+{{define "users/form.html"}}
+{{template "header" .}}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+    <h2 style="margin:0">{{if .Target.ID}}Edit: {{.Target.Username}}{{else}}New user{{end}}</h2>
+    <a href="/users">← Back</a>
+</div>
+
+{{if .Error}}
+<article style="border-color:var(--pico-color-red-500)">
+    <p style="margin:0; color:var(--pico-color-red-500)">{{.Error}}</p>
+</article>
+{{end}}
+
+<form method="post" action="{{if .Target.ID}}/users/{{.Target.ID}}{{else}}/users{{end}}">
+    <div class="grid">
+        <label>Username
+            <input type="text" name="username" value="{{.Target.Username}}" required autocomplete="off">
+        </label>
+        <label>Password
+            <input type="password" name="password" autocomplete="new-password"
+                {{if not .Target.ID}}required{{end}}
+                placeholder="{{if .Target.ID}}Leave empty to keep current{{else}}At least 4 characters{{end}}">
+        </label>
+    </div>
+
+    <label>
+        <input type="checkbox" name="is_admin" id="is_admin" {{if .Target.IsAdmin}}checked{{end}}
+            onchange="document.getElementById('access').hidden = this.checked">
+        Admin
+    </label>
+    <small style="display:block; margin:-0.5rem 0 1rem 0">Admins see every server, can create servers and manage users.</small>
+
+    <fieldset id="access" {{if .Target.IsAdmin}}hidden{{end}}>
+        <legend>Server access</legend>
+        <small>Editor can change the config and run dumps. Operator can only run dumps. Empty means no access.</small>
+        <figure>
+            <table>
+                <thead><tr><th>Server</th><th style="width:12rem">Role</th></tr></thead>
+                <tbody>
+                    {{range .Servers}}
+                    <tr>
+                        <td><code>{{.ServerID}}</code></td>
+                        <td>
+                            <select name="role_{{.ServerID}}" style="margin:0">
+                                <option value=""></option>
+                                <option value="editor" {{if eq .Role "editor"}}selected{{end}}>Editor</option>
+                                <option value="operator" {{if eq .Role "operator"}}selected{{end}}>Operator</option>
+                            </select>
+                        </td>
+                    </tr>
+                    {{else}}
+                    <tr><td colspan="2" style="text-align:center">No servers configured yet.</td></tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </figure>
+    </fieldset>
+
+    <div style="display:flex; gap:1rem; align-items:stretch">
+        <button type="submit" style="margin-bottom:0; width:auto">Save</button>
+        <a href="/users" role="button" class="outline">Cancel</a>
+    </div>
+</form>
+
+{{template "footer" .}}
+{{end}}

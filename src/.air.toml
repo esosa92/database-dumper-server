@@ -1,0 +1,15 @@
+root = "."
+tmp_dir = "/tmp/air"
+
+[build]
+  cmd = "go build -tags dev -o /tmp/air/server ."
+  bin = "/tmp/air/server"
+  include_ext = ["go", "html"]
+  exclude_dir = ["dumps"]
+  exclude_regex = ["_test\\.go"]
+  delay = 500
+  kill_delay = "1s"
+  send_interrupt = true
+
+[log]
+  main_only = true

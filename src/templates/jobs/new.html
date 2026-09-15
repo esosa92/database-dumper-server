@@ -1,0 +1,62 @@
+{{define "jobs/new.html"}}
+{{template "header" .}}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+    <h2 style="margin:0">Dump: {{.Server.ID}}</h2>
+    <a href="/">← Back</a>
+</div>
+
+{{if .Error}}
+<article style="border-color:var(--pico-color-red-500)">
+    <p style="margin:0; color:var(--pico-color-red-500)">{{.Error}}</p>
+</article>
+{{end}}
+
+<article>
+    <p><strong>Host:</strong> <code>{{.Server.SSHHost}}</code></p>
+    <p><strong>env.php:</strong> <code>{{.Server.RemoteEnvPath}}</code></p>
+    <p><strong>Local path:</strong> <code>{{if .Server.LocalPath}}{{.Server.LocalPath}}{{else}}./{{end}}</code></p>
+    <p style="margin:0">
+        <strong>Mode:</strong>
+        {{if .Server.OnlyCoreConfig}}only core_config_data
+        {{else if .Server.SingleTableMode}}single table mode
+        {{else if .Parts}}only tables ({{len .Parts}} part{{if gt (len .Parts) 1}}s{{end}})
+        {{else}}full dump{{end}}
+        {{if .Server.IgnoreTables}}· {{len .Server.IgnoreTables}} ignored{{end}}
+        {{if .Server.WithCoreConfig}}· with core_config_data{{end}}
+    </p>
+</article>
+
+<form method="post" action="/servers/{{.Server.ID}}/dump">
+    <fieldset>
+        <legend>Overrides for this run (all optional)</legend>
+
+        <label>
+            <input type="checkbox" name="only_core_config">
+            Only <code>core_config_data</code> this time
+        </label>
+
+        {{if gt (len .Parts) 1}}
+        <label>Only this part
+            <select name="part">
+                <option value="">All parts</option>
+                {{range $i, $p := .Parts}}{{if $p.Tag}}<option value="{{$p.Tag}}">{{$p.Tag}} ({{len $p.Tables}} tables)</option>{{end}}{{end}}
+            </select>
+        </label>
+        {{end}}
+
+        <label>Ad-hoc tables
+            <textarea name="tables" rows="4" placeholder="table_a, table_b or one per line"></textarea>
+            <small>Dumps exactly these tables in one file, ignoring the server's table settings.</small>
+        </label>
+    </fieldset>
+
+    <div style="display:flex; gap:1rem; align-items:stretch">
+        <button type="submit" style="margin-bottom:0; width:auto" {{if not .Server.Enabled}}disabled{{end}}>Start dump</button>
+        <a href="/servers/{{.Server.ID}}/edit" role="button" class="outline">Edit server</a>
+    </div>
+    {{if not .Server.Enabled}}<small>This server is disabled. Enable it to run dumps.</small>{{end}}
+</form>
+
+{{template "footer" .}}
+{{end}}

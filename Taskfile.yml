@@ -1,0 +1,27 @@
+version: '3'
+
+tasks:
+  run:
+    desc: Start the containers
+    cmd: docker compose up -d
+
+  stop:
+    desc: Stop the containers
+    cmd: docker compose stop
+
+  connect:
+    desc: Connect to the container
+    cmd: docker exec -it magento_db_dumper_server bash
+
+  build:
+    desc: Build the server binary inside the container
+    cmd: docker exec magento_db_dumper_server bash -c "cd /go/src && go build -o /tmp/server ."
+
+  dev:
+    desc: Run the server with hot reload (Air, -tags dev, port 8080)
+    cmds:
+      - docker exec magento_db_dumper_server bash -c "pkill -x server; pkill -x air; cd /go/src && exec air"
+
+  user:
+    desc: "Manage users: task user -- create <name> [--admin] | passwd <name> | list | admin <name> on|off | delete <name>"
+    cmd: docker exec -it -e DUMPER_ADMIN_PASSWORD magento_db_dumper_server bash -c "cd /go/src && go run . user {{.CLI_ARGS}}"

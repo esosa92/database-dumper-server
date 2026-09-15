@@ -1,0 +1,161 @@
+{{define "servers/form.html"}}
+{{template "header" .}}
+
+<style>
+    .options label {
+        display: flex;
+        align-items: center;
+        gap: .6rem;
+        height: 2.5rem;
+        margin: 0;
+    }
+    .options label input[type="checkbox"] {
+        margin: 0;
+    }
+    .options small {
+        display: block;
+        margin: -.5rem 0 .5rem 2.1rem;
+    }
+</style>
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+    <h2 style="margin:0">
+        {{if .ReadOnly}}View: {{.Server.ID}}{{else if .Server.ID}}Edit: {{.Server.ID}}{{else}}New server{{end}}
+    </h2>
+    <a href="/">← Back</a>
+</div>
+
+{{if .Error}}
+<article style="border-color:var(--pico-color-red-500)">
+    <p style="margin:0; color:var(--pico-color-red-500)">{{.Error}}</p>
+</article>
+{{end}}
+
+<form method="post" action="{{if .Server.ID}}/servers/{{.Server.ID}}{{else}}/servers{{end}}">
+    <fieldset {{if .ReadOnly}}disabled{{end}} style="margin:0; padding:0; border:0">
+    <div class="grid">
+        <fieldset>
+            <legend>Connection</legend>
+
+            <label>ID
+                <input type="text" name="id" value="{{.Server.ID}}"
+                    {{if .Server.ID}}readonly{{end}}
+                    required placeholder="e.g. mysite_prod">
+            </label>
+
+            <label>SSH Host
+                <input type="text" name="ssh_host" value="{{.Server.SSHHost}}"
+                    required placeholder="e.g. myserver or user@host">
+            </label>
+
+            <label>SSH Password
+                <input type="password" name="ssh_pass" value="{{.Server.SSHPass}}"
+                    placeholder="Leave empty for key-based auth">
+                <small>Leave empty to use SSH key authentication</small>
+            </label>
+
+            <label>Remote env.php path
+                <input type="text" name="remote_env_path" value="{{.Server.RemoteEnvPath}}"
+                    required placeholder="e.g. /var/www/magento/app/etc/env.php">
+            </label>
+
+            <label>Local dump path
+                <input type="text" name="local_path" value="{{.Server.LocalPath}}"
+                    placeholder="e.g. /home/user/dumps (optional)">
+            </label>
+
+            <label>Dump client
+                <input type="text" name="dump_client" value="{{.Server.DumpClient}}"
+                    placeholder="mysqldump (default)">
+            </label>
+
+            <label>Net buffer length
+                <input type="text" name="net_buffer_length" value="{{.Server.NetBufferLength}}"
+                    placeholder="e.g. 1M (optional)">
+            </label>
+        </fieldset>
+
+        <fieldset class="options">
+            <legend>Options</legend>
+
+            <label>
+                <input type="checkbox" name="enabled" {{if .Server.Enabled}}checked{{end}}>
+                Enabled
+            </label>
+
+            <label>
+                <input type="checkbox" name="with_core_config" {{if .Server.WithCoreConfig}}checked{{end}}>
+                Include core_config_data
+            </label>
+
+            <label>
+                <input type="checkbox" name="only_core_config" {{if .Server.OnlyCoreConfig}}checked{{end}}>
+                Only core_config_data
+            </label>
+
+            <label>
+                <input type="checkbox" name="enable_set_gtid_purged_off" {{if .Server.EnableSetGTIDPurgedOff}}checked{{end}}>
+                Set GTID_PURGED=OFF
+            </label>
+
+            <label>
+                <input type="checkbox" name="skip_extended_insert" {{if .Server.SkipExtendedInsert}}checked{{end}}>
+                Skip extended insert
+            </label>
+
+            <label>
+                <input type="checkbox" name="skip_add_locks" {{if .Server.SkipAddLocks}}checked{{end}}>
+                Skip add locks
+            </label>
+
+            <label>
+                <input type="checkbox" name="skip_disable_keys" {{if .Server.SkipDisableKeys}}checked{{end}}>
+                Skip disable keys
+            </label>
+
+            <label>
+                <input type="checkbox" name="skip_lock_tables" {{if .Server.SkipLockTables}}checked{{end}}>
+                Skip lock tables
+            </label>
+
+            <label>
+                <input type="checkbox" name="skip_add_drop_table" {{if .Server.SkipAddDropTable}}checked{{end}}>
+                Skip add drop table
+            </label>
+
+            <label>
+                <input type="checkbox" name="single_table_mode" {{if .Server.SingleTableMode}}checked{{end}}>
+                Single table mode
+            </label>
+            <small>One dump + download per table, resumable.</small>
+
+
+        </fieldset>
+    </div>
+
+    <fieldset>
+        <legend>Tables</legend>
+        <div class="grid">
+            <label>Ignore tables
+                <textarea name="ignore_tables" rows="8"
+                    placeholder="One table name per line, wildcards allowed in single table mode">{{join .Server.IgnoreTables "\n"}}</textarea>
+            </label>
+
+            <label>Only tables
+                <textarea name="only_tables" rows="8"
+                    placeholder="One table name per line. A line starting with # begins a named part.">{{.Server.OnlyTables}}</textarea>
+                <small>Optional. Blank lines or <code>#name</code> lines split the list into parts, one dump per part.</small>
+            </label>
+        </div>
+    </fieldset>
+
+    </fieldset>
+
+    <div style="display:flex; gap:1rem; align-items:stretch">
+        {{if not .ReadOnly}}<button type="submit" style="margin-bottom:0; width:auto">Save</button>{{end}}
+        <a href="/" role="button" class="outline">{{if .ReadOnly}}Back{{else}}Cancel{{end}}</a>
+    </div>
+</form>
+
+{{template "footer" .}}
+{{end}}

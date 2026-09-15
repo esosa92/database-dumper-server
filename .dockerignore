@@ -1,0 +1,14 @@
+sdk/
+bin/
+pkg/
+.git/
+.idea/
+deploy/data/
+deploy/dumps/
+deploy/ssh/
+deploy/.env
+src/dumper.db*
+src/dump.json
+src/*.txt
+src/*_dump/
+src/dumps/

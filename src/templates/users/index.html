@@ -1,0 +1,42 @@
+{{define "users/index.html"}}
+{{template "header" .}}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+    <h2 style="margin:0">Users</h2>
+    <a href="/users/new" role="button">+ New user</a>
+</div>
+
+<figure>
+    <table>
+        <thead>
+            <tr>
+                <th>Username</th>
+                <th>Admin</th>
+                <th>Created</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {{range .Users}}
+            <tr id="user-{{.ID}}">
+                <td><strong>{{.Username}}</strong></td>
+                <td>{{if .IsAdmin}}<ins>yes</ins>{{else}}<del>no</del>{{end}}</td>
+                <td>{{.CreatedAt.Format "02/01/2006"}}</td>
+                <td style="white-space:nowrap">
+                    <a href="/users/{{.ID}}/edit" role="button" class="outline" style="margin-right:.5rem">Edit</a>
+                    {{if ne .ID $.User.ID}}
+                    <button class="outline contrast"
+                        hx-post="/users/{{.ID}}/delete"
+                        hx-target="#user-{{.ID}}"
+                        hx-swap="outerHTML swap:300ms"
+                        hx-confirm="Delete {{.Username}}?">Delete</button>
+                    {{end}}
+                </td>
+            </tr>
+            {{end}}
+        </tbody>
+    </table>
+</figure>
+
+{{template "footer" .}}
+{{end}}

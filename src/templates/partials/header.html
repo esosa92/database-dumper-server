@@ -1,0 +1,32 @@
+{{define "header"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DB Dumper</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+    <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+</head>
+<body>
+    <header class="container-fluid">
+        <nav>
+            <ul>
+                <li><strong><a href="/" class="contrast">DB Dumper</a></strong></li>
+            </ul>
+            {{if .User.ID}}
+            <ul>
+                <li><a href="/">Servers</a></li>
+                <li><a href="/jobs">Jobs</a></li>
+                {{if .User.IsAdmin}}<li><a href="/users">Users</a></li>{{end}}
+                <li>
+                    <form method="post" action="/logout" style="margin:0">
+                        <button type="submit" class="outline secondary" style="margin:0; padding:.25rem .75rem">{{.User.Username}} · Logout</button>
+                    </form>
+                </li>
+            </ul>
+            {{end}}
+        </nav>
+    </header>
+    <main class="container">
+{{end}}

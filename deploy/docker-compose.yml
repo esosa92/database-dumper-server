@@ -1,0 +1,37 @@
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: database-dumper-caddy
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - dumper-net
+
+  app:
+    build:
+      context: ..
+    image: database-dumper:local
+    container_name: database-dumper-app
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - ./data:/data
+      - ./dumps:/dumps
+      - ./ssh:/host_ssh:ro
+    networks:
+      - dumper-net
+
+networks:
+  dumper-net:
+    name: dumper-net
+
+volumes:
+  caddy_data:
+  caddy_config:

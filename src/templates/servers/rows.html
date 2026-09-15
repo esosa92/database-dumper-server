@@ -1,0 +1,42 @@
+{{define "servers/rows.html"}}
+{{template "server-rows" .Servers}}
+{{end}}
+
+{{define "server-rows"}}
+{{range .}}
+<tr id="server-{{.ID}}">
+    <td><strong>{{.ID}}</strong></td>
+    <td><code>{{.SSHHost}}</code></td>
+    <td>
+        {{if .OnlyCoreConfig}}<small>only config</small>{{end}}
+        {{if .WithCoreConfig}}<small>+config</small>{{end}}
+        {{if .IgnoreTables}}<small>{{len .IgnoreTables}} ignored</small>{{end}}
+        {{if .OnlyTables}}<small>only tables</small>{{end}}
+        {{if .SingleTableMode}}<small>single table</small>{{end}}
+    </td>
+    <td>
+        {{if .Enabled}}
+            <ins>yes</ins>
+        {{else}}
+            <del>no</del>
+        {{end}}
+    </td>
+    <td style="white-space:nowrap">
+        <a href="/servers/{{.ID}}/edit" role="button" class="outline" style="margin-right:.5rem">{{if .CanEdit}}Edit{{else}}View{{end}}</a>
+        <a href="/servers/{{.ID}}/dump" role="button" style="margin-right:.5rem"
+            {{if not .Enabled}}aria-disabled="true" onclick="return false" title="Server is disabled"{{end}}>Dump</a>
+        {{if .CanEdit}}
+        <button
+            class="outline contrast"
+            hx-post="/servers/{{.ID}}/delete"
+            hx-target="#server-{{.ID}}"
+            hx-swap="outerHTML swap:300ms"
+            hx-confirm="Delete {{.ID}}?"
+        >Delete</button>
+        {{end}}
+    </td>
+</tr>
+{{else}}
+<tr><td colspan="5" style="text-align:center">No servers found.</td></tr>
+{{end}}
+{{end}}

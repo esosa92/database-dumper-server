@@ -1,0 +1,40 @@
+{{define "servers/index.html"}}
+{{template "header" .}}
+
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem">
+    <h2 style="margin:0">Servers</h2>
+    {{if .User.IsAdmin}}<a href="/servers/new" role="button">+ New server</a>{{end}}
+</div>
+
+<input
+    type="search"
+    name="q"
+    value="{{.Query}}"
+    placeholder="Search by ID or host..."
+    hx-get="/"
+    hx-trigger="keyup changed delay:300ms"
+    hx-target="#servers-tbody"
+    hx-swap="innerHTML"
+    hx-include="this"
+    style="margin-bottom:1rem"
+>
+
+<figure>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>SSH Host</th>
+                <th>Options</th>
+                <th>Enabled</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody id="servers-tbody">
+            {{template "server-rows" .Servers}}
+        </tbody>
+    </table>
+</figure>
+
+{{template "footer" .}}
+{{end}}
