@@ -5,15 +5,17 @@ import (
 	"net/http"
 
 	"database-dumper-server/dumper"
+	"database-dumper-server/sshkey"
 )
 
 type Handler struct {
 	tmpl *template.Template
 	jobs *dumper.Manager
+	keys sshkey.Store
 }
 
-func New(tmpl *template.Template, jobs *dumper.Manager) *Handler {
-	return &Handler{tmpl: tmpl, jobs: jobs}
+func New(tmpl *template.Template, jobs *dumper.Manager, keys sshkey.Store) *Handler {
+	return &Handler{tmpl: tmpl, jobs: jobs, keys: keys}
 }
 
 func (h *Handler) render(w http.ResponseWriter, name string, data any) {

@@ -20,6 +20,7 @@
 /src/dump.json
 /src/dumps/
 /src/tmp/
+/src/ssh/
 /src/*.txt
 /src/*_dump/
 *.sql.gz

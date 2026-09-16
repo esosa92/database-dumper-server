@@ -56,7 +56,8 @@ func createSchema() error {
 			skip_lock_tables           INTEGER NOT NULL DEFAULT 0,
 			skip_add_drop_table        INTEGER NOT NULL DEFAULT 0,
 			single_table_mode          INTEGER NOT NULL DEFAULT 0,
-			dump_client                TEXT NOT NULL DEFAULT ''
+			dump_client                TEXT NOT NULL DEFAULT '',
+			ssh_port                   INTEGER NOT NULL DEFAULT 22
 		)
 	`)
 	if err != nil {
@@ -69,6 +70,7 @@ func createSchema() error {
 		"skip_add_drop_table": "INTEGER NOT NULL DEFAULT 0",
 		"single_table_mode":   "INTEGER NOT NULL DEFAULT 0",
 		"dump_client":         "TEXT NOT NULL DEFAULT ''",
+		"ssh_port":            "INTEGER NOT NULL DEFAULT 22",
 	}
 	existing, err := columnNames("servers")
 	if err != nil {

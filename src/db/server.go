@@ -9,6 +9,7 @@ import (
 type Server struct {
 	ID                     string   `json:"id"`
 	SSHHost                string   `json:"ssh_host"`
+	SSHPort                int      `json:"ssh_port"`
 	SSHPass                string   `json:"ssh_pass"`
 	RemoteEnvPath          string   `json:"remote_env_path"`
 	LocalPath              string   `json:"local_path"`
@@ -31,7 +32,7 @@ type Server struct {
 const serverColumns = `id, ssh_host, ssh_pass, remote_env_path, local_path,
 	enabled, with_core_config, only_core_config, enable_set_gtid_purged_off,
 	ignore_tables, only_tables, net_buffer_length, skip_extended_insert, skip_add_locks,
-	skip_disable_keys, skip_lock_tables, skip_add_drop_table, single_table_mode, dump_client`
+	skip_disable_keys, skip_lock_tables, skip_add_drop_table, single_table_mode, dump_client, ssh_port`
 
 type scanner interface {
 	Scan(dest ...any) error
@@ -43,7 +44,7 @@ func scanServer(row scanner) (Server, error) {
 	err := row.Scan(&s.ID, &s.SSHHost, &s.SSHPass, &s.RemoteEnvPath, &s.LocalPath,
 		&s.Enabled, &s.WithCoreConfig, &s.OnlyCoreConfig, &s.EnableSetGTIDPurgedOff,
 		&ignoreTables, &s.OnlyTables, &s.NetBufferLength, &s.SkipExtendedInsert, &s.SkipAddLocks,
-		&s.SkipDisableKeys, &s.SkipLockTables, &s.SkipAddDropTable, &s.SingleTableMode, &s.DumpClient)
+		&s.SkipDisableKeys, &s.SkipLockTables, &s.SkipAddDropTable, &s.SingleTableMode, &s.DumpClient, &s.SSHPort)
 	if err != nil {
 		return s, err
 	}
@@ -58,11 +59,15 @@ func serverArgs(s Server) ([]any, error) {
 	if err != nil {
 		return nil, fmt.Errorf("marshal ignore_tables: %w", err)
 	}
+	port := s.SSHPort
+	if port <= 0 {
+		port = 22
+	}
 	return []any{
 		s.SSHHost, s.SSHPass, s.RemoteEnvPath, s.LocalPath,
 		s.Enabled, s.WithCoreConfig, s.OnlyCoreConfig, s.EnableSetGTIDPurgedOff,
 		string(ignoreTables), s.OnlyTables, s.NetBufferLength, s.SkipExtendedInsert, s.SkipAddLocks,
-		s.SkipDisableKeys, s.SkipLockTables, s.SkipAddDropTable, s.SingleTableMode, s.DumpClient,
+		s.SkipDisableKeys, s.SkipLockTables, s.SkipAddDropTable, s.SingleTableMode, s.DumpClient, port,
 	}, nil
 }
 
@@ -124,8 +129,8 @@ func insertServerTx(tx dbExecer, s Server) error {
 		INSERT INTO servers (ssh_host, ssh_pass, remote_env_path, local_path,
 			enabled, with_core_config, only_core_config, enable_set_gtid_purged_off,
 			ignore_tables, only_tables, net_buffer_length, skip_extended_insert, skip_add_locks,
-			skip_disable_keys, skip_lock_tables, skip_add_drop_table, single_table_mode, dump_client, id)
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			skip_disable_keys, skip_lock_tables, skip_add_drop_table, single_table_mode, dump_client, ssh_port, id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		append(args, s.ID)...)
 	return err
 }
@@ -140,7 +145,7 @@ func UpdateServer(s Server) error {
 			ssh_host = ?, ssh_pass = ?, remote_env_path = ?, local_path = ?,
 			enabled = ?, with_core_config = ?, only_core_config = ?, enable_set_gtid_purged_off = ?,
 			ignore_tables = ?, only_tables = ?, net_buffer_length = ?, skip_extended_insert = ?, skip_add_locks = ?,
-			skip_disable_keys = ?, skip_lock_tables = ?, skip_add_drop_table = ?, single_table_mode = ?, dump_client = ?
+			skip_disable_keys = ?, skip_lock_tables = ?, skip_add_drop_table = ?, single_table_mode = ?, dump_client = ?, ssh_port = ?
 		WHERE id = ?`,
 		append(args, s.ID)...)
 	return err

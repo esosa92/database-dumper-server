@@ -35,7 +35,8 @@ Las configuraciones de servidores se guardan en SQLite en lugar del `dump.json`.
 
 Tabla `servers`:
 - `id` — identificador único (ej: "powermusic-prod")
-- `ssh_host` — host SSH del servidor remoto
+- `ssh_host` — host SSH del servidor remoto (`usuario@host` o alias)
+- `ssh_port` — puerto SSH, default 22
 - `ssh_pass` — contraseña SSH opcional
 - `remote_env_path` — path al `env.php` de Magento en el servidor
 - `local_path` — carpeta local donde se guarda el dump
@@ -49,9 +50,17 @@ Tabla `servers`:
 - `net_buffer_length` — tamaño de buffer MySQL
 - `dump_client` — binario a usar en vez de `mysqldump`
 
+## Clave SSH
+
+- El app tiene una clave ed25519 propia en `<data dir>/ssh/`. Se genera al arrancar si no existe
+- Página `/settings/ssh` (solo admin): ver y copiar la pública, descargarla, regenerar, o importar una privada sin passphrase
+- `ssh` y `scp` corren con `-i` esa clave, `known_hosts` propio en el mismo directorio y `StrictHostKeyChecking=accept-new`
+- Sin `ssh_pass` se usa `BatchMode=yes`, así un host que pida contraseña falla en vez de colgarse
+- Cada server tiene `ssh_port` (default 22). `ssh_host` es `usuario@host` o un alias de `~/.ssh/config` si existe
+
 ## Despliegue
 
-- El contenedor monta `~/.ssh` del usuario en `/host_ssh` y el entrypoint lo copia a `/root/.ssh` con permisos de root, porque ssh rechaza configs de otro dueño
+- Opcional: el contenedor puede montar un `.ssh` en `/host_ssh` y el entrypoint lo copia a `/root/.ssh` con permisos de root, para usar alias de `config`. No hace falta si se usa la clave propia del app
 - `sshpass` se instala al arrancar el contenedor
 - `local_path` es un path dentro del contenedor. `docker-compose.yml` monta `~/dumps` en `/dumps`
 

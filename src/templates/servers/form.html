@@ -43,10 +43,15 @@
                     required placeholder="e.g. mysite_prod">
             </label>
 
-            <label>SSH Host
-                <input type="text" name="ssh_host" value="{{.Server.SSHHost}}"
-                    required placeholder="e.g. myserver or user@host">
-            </label>
+            <div class="grid" style="grid-template-columns: 3fr 1fr">
+                <label>SSH Host
+                    <input type="text" name="ssh_host" value="{{.Server.SSHHost}}"
+                        required placeholder="e.g. user@host or an alias">
+                </label>
+                <label>Port
+                    <input type="number" name="ssh_port" value="{{if .Server.SSHPort}}{{.Server.SSHPort}}{{else}}22{{end}}" min="1" max="65535">
+                </label>
+            </div>
 
             <label>SSH Password
                 <input type="password" name="ssh_pass" value="{{.Server.SSHPass}}"

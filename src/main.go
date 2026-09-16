@@ -10,6 +10,7 @@ import (
 	"database-dumper-server/db"
 	"database-dumper-server/dumper"
 	"database-dumper-server/handlers"
+	"database-dumper-server/sshkey"
 )
 
 func envOr(key, fallback string) string {
@@ -54,7 +55,14 @@ func main() {
 		log.Printf("marked %d running jobs as interrupted", n)
 	}
 
-	h := handlers.New(tmpl, dumper.NewManager())
+	keys := sshkey.New(dataDir)
+	if created, err := keys.EnsureExists("database-dumper"); err != nil {
+		log.Fatalf("ssh key: %v", err)
+	} else if created {
+		log.Printf("generated ssh key at %s", keys.PrivateKeyPath())
+	}
+
+	h := handlers.New(tmpl, dumper.NewManager(keys), keys)
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /login", h.LoginForm)
@@ -75,6 +83,11 @@ func main() {
 	mux.HandleFunc("GET /jobs/{id}/log", h.JobLog)
 	mux.HandleFunc("POST /jobs/{id}/stop", h.JobStop)
 	mux.HandleFunc("GET /jobs/{id}/files/{index}", h.JobDownload)
+
+	mux.HandleFunc("GET /settings/ssh", h.RequireAdmin(h.SSHKeyShow))
+	mux.HandleFunc("GET /settings/ssh/public-key", h.RequireAdmin(h.SSHKeyDownload))
+	mux.HandleFunc("POST /settings/ssh/generate", h.RequireAdmin(h.SSHKeyGenerate))
+	mux.HandleFunc("POST /settings/ssh/import", h.RequireAdmin(h.SSHKeyImport))
 
 	mux.HandleFunc("GET /users", h.RequireAdmin(h.UsersIndex))
 	mux.HandleFunc("GET /users/new", h.RequireAdmin(h.UserNew))

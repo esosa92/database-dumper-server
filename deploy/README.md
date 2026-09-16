@@ -29,10 +29,10 @@ before closing the root session.
 ## First deploy
 
 ```bash
-git clone <repo> /opt/database-dumper
+git clone https://github.com/esosa92/database-dumper-server.git /opt/database-dumper
 cd /opt/database-dumper/deploy
 cp .env.example .env
-mkdir -p data dumps ssh
+mkdir -p data dumps
 ```
 
 Edit `.env`:
@@ -44,24 +44,24 @@ Edit `.env`:
 
 ### SSH access to the Magento hosts
 
-The app runs `ssh` and `scp` from inside its container. Put in `deploy/ssh/`
-what a user on this VPS would need in `~/.ssh` to reach the Magento hosts:
+The app has its own SSH key. It is generated on first start and stored in
+`deploy/data/ssh/`. After the first start, log in as admin, open **SSH key**
+in the top bar, copy the public key, and add it to `~/.ssh/authorized_keys`
+of the SSH user on every Magento host. That page also lets you download the
+public key, regenerate the key, or import a private key you already
+distributed (without passphrase).
 
-- `config` with the host aliases used in the server configs
-- the private keys those aliases reference, without passphrase
-- `known_hosts` with every target host already accepted
-
-To populate `known_hosts`:
-
-```bash
-ssh-keyscan -H magento-host.example.com >> ssh/known_hosts
-```
-
-The directory is mounted read-only and copied into the container at start, so
-after changing anything in it run `docker compose restart app`.
+Server configs use `user@host` as SSH host, with the port in its own field.
+Host keys are recorded automatically on the first connection, so there is no
+`known_hosts` to maintain.
 
 Hosts that only accept password auth work with the `SSH Password` field of the
 server config; `sshpass` is in the image.
+
+If you would rather keep using aliases from an existing `~/.ssh/config`, put
+that `config` and its keys in `deploy/ssh/`. It is mounted read-only and
+copied into the container at start; `docker compose restart app` after
+changing it. Both mechanisms work at the same time.
 
 ### Server configs
 
@@ -118,4 +118,4 @@ docker compose exec -e DUMPER_ADMIN_PASSWORD=newpass app /database-dumper user p
   sessions, job history.
 - `deploy/dumps/`: the downloaded dumps. Old ones are never deleted
   automatically; prune by hand or with a cron.
-- `deploy/ssh/`: keys and config. Back up separately and carefully.
+- `deploy/data/ssh/`: the app's private key. Back up separately and carefully.

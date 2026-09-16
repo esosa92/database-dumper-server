@@ -1,0 +1,58 @@
+{{define "settings/ssh.html"}}
+{{template "header" .}}
+
+<h2>SSH key</h2>
+
+{{if .Error}}
+<article style="border-color:var(--pico-color-red-500)">
+    <p style="margin:0; color:var(--pico-color-red-500)">{{.Error}}</p>
+</article>
+{{end}}
+{{if eq .Notice "generated"}}<article><p style="margin:0">New key generated. Update <code>authorized_keys</code> on every host: the old key no longer works.</p></article>{{end}}
+{{if eq .Notice "imported"}}<article><p style="margin:0">Key imported.</p></article>{{end}}
+
+<article>
+    <h4>Public key</h4>
+    <p>Add this line to <code>~/.ssh/authorized_keys</code> of the SSH user on each Magento host. The app uses the matching private key for every <code>ssh</code> and <code>scp</code>.</p>
+    {{if .PublicKey}}
+    <textarea id="pubkey" readonly rows="3" style="font-family:monospace; font-size:.85rem">{{.PublicKey}}</textarea>
+    <p><small>Fingerprint: <code>{{.Fingerprint}}</code></small></p>
+    <div style="display:flex; gap:1rem; align-items:stretch">
+        <button type="button" style="margin-bottom:0; width:auto" onclick="navigator.clipboard.writeText(document.getElementById('pubkey').value); this.textContent='Copied'">Copy</button>
+        <a href="/settings/ssh/public-key" role="button" class="outline">Download</a>
+    </div>
+    {{else}}
+    <p><em>No key yet.</em></p>
+    {{end}}
+</article>
+
+<div class="grid">
+    <article>
+        <h4>Generate a new key</h4>
+        <p>Creates a fresh ed25519 key and replaces the current one. Hosts that trust the old key stop working until you add the new one.</p>
+        <form method="post" action="/settings/ssh/generate" onsubmit="return confirm('Replace the current key? Hosts trusting the old key will stop working.')">
+            <button type="submit" class="outline contrast" style="width:auto">Generate new key</button>
+        </form>
+    </article>
+
+    <article>
+        <h4>Import an existing key</h4>
+        <p>Use a private key you already distributed to the hosts. Without passphrase.</p>
+        <form method="post" action="/settings/ssh/import" enctype="multipart/form-data">
+            <label>Key file
+                <input type="file" name="key_file">
+            </label>
+            <label>Or paste it
+                <textarea name="key_text" rows="5" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----" style="font-family:monospace; font-size:.85rem"></textarea>
+            </label>
+            <button type="submit" class="outline" style="width:auto">Import</button>
+        </form>
+    </article>
+</div>
+
+<article>
+    <p style="margin:0"><small>Private key on disk: <code>{{.KeyPath}}</code>. Known hosts are recorded automatically on first connection.</small></p>
+</article>
+
+{{template "footer" .}}
+{{end}}

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"database-dumper-server/db"
+	"database-dumper-server/sshkey"
 )
 
 type Logger interface {
@@ -25,18 +26,36 @@ type Options struct {
 	Tables         []string
 	OnlyCoreConfig bool
 	Part           string
+	Keys           sshkey.Store
+}
+
+func sshBaseArgs(s *db.Server, keys sshkey.Store) []string {
+	args := keys.SSHArgs()
+	if s.SSHPass == "" {
+		args = append(args, "-o", "BatchMode=yes")
+	}
+	return args
+}
+
+func sshPort(s *db.Server) string {
+	if s.SSHPort > 0 {
+		return strconv.Itoa(s.SSHPort)
+	}
+	return "22"
 }
 
 type Result struct {
 	Files []string
 }
 
-func sshCommand(ctx context.Context, s *db.Server, script string) *exec.Cmd {
+func sshCommand(ctx context.Context, s *db.Server, keys sshkey.Store, script string) *exec.Cmd {
+	args := append([]string{}, sshBaseArgs(s, keys)...)
+	args = append(args, "-p", sshPort(s), s.SSHHost, "/bin/bash", "-s", s.RemoteEnvPath)
 	var cmd *exec.Cmd
 	if s.SSHPass == "" {
-		cmd = exec.CommandContext(ctx, "ssh", s.SSHHost, "/bin/bash", "-s", s.RemoteEnvPath)
+		cmd = exec.CommandContext(ctx, "ssh", args...)
 	} else {
-		cmd = exec.CommandContext(ctx, "sshpass", "-e", "ssh", s.SSHHost, "/bin/bash", "-s", s.RemoteEnvPath)
+		cmd = exec.CommandContext(ctx, "sshpass", append([]string{"-e", "ssh"}, args...)...)
 		cmd.Env = append(os.Environ(), "SSHPASS="+s.SSHPass)
 	}
 	cmd.Stdin = strings.NewReader(script)
@@ -47,8 +66,8 @@ func commandString(cmd *exec.Cmd) string {
 	return cmd.Path + " " + strings.Join(cmd.Args[1:], " ")
 }
 
-func executeDumpScript(ctx context.Context, s *db.Server, script string, log Logger) (remoteFile, error) {
-	cmd := sshCommand(ctx, s, script)
+func executeDumpScript(ctx context.Context, s *db.Server, keys sshkey.Store, script string, log Logger) (remoteFile, error) {
+	cmd := sshCommand(ctx, s, keys, script)
 	log.Printf("%s", script)
 	log.Printf("Command to be executed: %s", commandString(cmd))
 
@@ -121,8 +140,8 @@ func watchDownload(ctx context.Context, localPath string, total int64, log Logge
 	return func() { close(stop) }
 }
 
-func getRemoteTableList(ctx context.Context, s *db.Server, log Logger) ([]string, error) {
-	cmd := sshCommand(ctx, s, getTablesScript)
+func getRemoteTableList(ctx context.Context, s *db.Server, keys sshkey.Store, log Logger) ([]string, error) {
+	cmd := sshCommand(ctx, s, keys, getTablesScript)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = log.Writer()
@@ -140,19 +159,21 @@ func getRemoteTableList(ctx context.Context, s *db.Server, log Logger) ([]string
 	return tables, nil
 }
 
-func scpFile(ctx context.Context, s *db.Server, remote remoteFile, localName string, log Logger) (string, error) {
+func scpFile(ctx context.Context, s *db.Server, keys sshkey.Store, remote remoteFile, localName string, log Logger) (string, error) {
 	log.Printf("Starting SCP transfer...")
 	if strings.TrimSpace(localName) == "" {
 		localName = path.Base(remote.Path)
 	}
 	localPath := filepath.Join(s.LocalPath, localName)
 
+	args := append([]string{}, sshBaseArgs(s, keys)...)
+	args = append(args, "-P", sshPort(s), s.SSHHost+":"+remote.Path, localPath)
 	var cmd *exec.Cmd
 	if s.SSHPass != "" {
-		cmd = exec.CommandContext(ctx, "sshpass", "-e", "scp", s.SSHHost+":"+remote.Path, localPath)
+		cmd = exec.CommandContext(ctx, "sshpass", append([]string{"-e", "scp"}, args...)...)
 		cmd.Env = append(os.Environ(), "SSHPASS="+s.SSHPass)
 	} else {
-		cmd = exec.CommandContext(ctx, "scp", s.SSHHost+":"+remote.Path, localPath)
+		cmd = exec.CommandContext(ctx, "scp", args...)
 	}
 	log.Printf("Command to be executed: %s", commandString(cmd))
 
@@ -182,11 +203,11 @@ func isTransientSCPError(err error) bool {
 	return false
 }
 
-func scpFileWithRetry(ctx context.Context, s *db.Server, remote remoteFile, localName string, log Logger) (string, error) {
+func scpFileWithRetry(ctx context.Context, s *db.Server, keys sshkey.Store, remote remoteFile, localName string, log Logger) (string, error) {
 	const maxAttempts = 3
 	var lastErr error
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		local, err := scpFile(ctx, s, remote, localName, log)
+		local, err := scpFile(ctx, s, keys, remote, localName, log)
 		if err == nil {
 			return local, nil
 		}
@@ -305,7 +326,7 @@ func Run(ctx context.Context, server db.Server, opts Options, log Logger) (Resul
 	}
 
 	dumpAndFetch := func(tables []string, localName string) error {
-		return dumpAndFetchNamed(ctx, s, tables, localName, log, &res)
+		return dumpAndFetchNamed(ctx, s, opts.Keys, tables, localName, log, &res)
 	}
 
 	if len(opts.Tables) > 0 {
@@ -337,7 +358,7 @@ func Run(ctx context.Context, server db.Server, opts Options, log Logger) (Resul
 			}
 		}
 
-		remote, err := getRemoteTableList(ctx, s, log)
+		remote, err := getRemoteTableList(ctx, s, opts.Keys, log)
 		if err != nil {
 			return res, err
 		}
@@ -392,12 +413,12 @@ func Run(ctx context.Context, server db.Server, opts Options, log Logger) (Resul
 	return res, dumpAndFetch(nil, "")
 }
 
-func dumpAndFetchNamed(ctx context.Context, s *db.Server, tables []string, localName string, log Logger, res *Result) error {
+func dumpAndFetchNamed(ctx context.Context, s *db.Server, keys sshkey.Store, tables []string, localName string, log Logger, res *Result) error {
 	script, err := buildDumpScript(s, tables, log)
 	if err != nil {
 		return err
 	}
-	remote, err := executeDumpScript(ctx, s, script, log)
+	remote, err := executeDumpScript(ctx, s, keys, script, log)
 	if err != nil {
 		return err
 	}
@@ -405,7 +426,7 @@ func dumpAndFetchNamed(ctx context.Context, s *db.Server, tables []string, local
 	if localName != "" {
 		localName = strings.ReplaceAll(localName, "__base__", path.Base(remote.Path))
 	}
-	local, err := scpFileWithRetry(ctx, s, remote, localName, log)
+	local, err := scpFileWithRetry(ctx, s, keys, remote, localName, log)
 	if err != nil {
 		return err
 	}

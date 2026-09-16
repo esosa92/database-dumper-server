@@ -18,7 +18,7 @@
             <ul>
                 <li><a href="/">Servers</a></li>
                 <li><a href="/jobs">Jobs</a></li>
-                {{if .User.IsAdmin}}<li><a href="/users">Users</a></li>{{end}}
+                {{if .User.IsAdmin}}<li><a href="/users">Users</a></li><li><a href="/settings/ssh">SSH key</a></li>{{end}}
                 <li>
                     <form method="post" action="/logout" style="margin:0">
                         <button type="submit" class="outline secondary" style="margin:0; padding:.25rem .75rem">{{.User.Username}} · Logout</button>

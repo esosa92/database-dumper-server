@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"database-dumper-server/db"
+	"database-dumper-server/sshkey"
 )
 
 const (
@@ -128,10 +129,11 @@ func (j *Job) Stop() {
 type Manager struct {
 	mu      sync.Mutex
 	running map[int64]*Job
+	keys    sshkey.Store
 }
 
-func NewManager() *Manager {
-	return &Manager{running: map[int64]*Job{}}
+func NewManager(keys sshkey.Store) *Manager {
+	return &Manager{running: map[int64]*Job{}, keys: keys}
 }
 
 func (m *Manager) Start(server db.Server, opts Options) (*Job, error) {
@@ -150,6 +152,7 @@ func (m *Manager) Start(server db.Server, opts Options) (*Job, error) {
 		return nil, err
 	}
 
+	opts.Keys = m.keys
 	ctx, cancel := context.WithCancel(context.Background())
 	job := &Job{ID: id, ServerID: server.ID, StartedAt: started, status: StatusRunning, cancel: cancel}
 	m.running[id] = job

@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"database-dumper-server/db"
@@ -42,7 +43,7 @@ func (h *Handler) ServersIndex(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) ServerNew(w http.ResponseWriter, r *http.Request) {
-	h.render(w, "servers/form.html", formData{User: currentUser(r), Server: db.Server{Enabled: true}})
+	h.render(w, "servers/form.html", formData{User: currentUser(r), Server: db.Server{Enabled: true, SSHPort: 22}})
 }
 
 func (h *Handler) ServerCreate(w http.ResponseWriter, r *http.Request) {
@@ -107,9 +108,15 @@ func (h *Handler) ServerDelete(w http.ResponseWriter, r *http.Request) {
 func serverFromForm(r *http.Request) db.Server {
 	r.ParseForm()
 
+	port, _ := strconv.Atoi(strings.TrimSpace(r.FormValue("ssh_port")))
+	if port <= 0 {
+		port = 22
+	}
+
 	return db.Server{
 		ID:                     strings.TrimSpace(r.FormValue("id")),
 		SSHHost:                strings.TrimSpace(r.FormValue("ssh_host")),
+		SSHPort:                port,
 		SSHPass:                r.FormValue("ssh_pass"),
 		RemoteEnvPath:          strings.TrimSpace(r.FormValue("remote_env_path")),
 		LocalPath:              strings.TrimSpace(r.FormValue("local_path")),
